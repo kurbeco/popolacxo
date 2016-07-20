@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>300</title>
+    <!-- EXTERNAL LIBS-->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script src="https://www.google.com/jsapi"></script>
+
+    <!-- EXAMPLE SCRIPT -->
+    <script>
+
+      // onload callback
+      function drawChart() {
+
+        var cloud_url = 'https://data.sparkfun.com/output/';
+        var public_key = 'ZGKzMD9lv8uo89J6YdDp';
+
+        // JSONP request
+        var jsonData = $.ajax({
+          url:  cloud_url + public_key + '.json',
+          data: {page: 1},
+          dataType: 'jsonp',
+        }).done(function (results) {
+          var latest = results[0];
+          var gauge = new google.visualization.Gauge($('#gauge').get(0));
+          var gaugeData = google.visualization.arrayToDataTable([
+            ['Label', 'Value'],
+            ['A', 0],
+            ['B', 0],
+            ['C', 0]
+          ]);
+          var options = {
+            width: 400, height: 180,
+            yellowColor: "#0000FF",
+            redFrom: 25, redTo: 30,
+            greenFrom: 17, greenTo: 25,
+            yellowFrom: 10, yellowTo: 17,
+            minorTicks: 1,
+            max: 30,
+            min: 10  
+          };
+
+          gaugeData.setValue(0,1,parseFloat(latest.tempa));
+          gaugeData.setValue(1,1,parseFloat(latest.tempb));
+          gaugeData.setValue(2,1,parseFloat(latest.tempc));
+          document.getElementById("time").innerHTML = 'Last updated: ' + latest.timestamp;
+          gauge.draw(gaugeData,options);
+         });
+      }
+
+      function load() {
+      drawChart();
+      setInterval(function() {
+                drawChart();
+          }, 450000);  
+      }
+      // load chart lib
+      google.load('visualization', '1', {
+        packages: ['corechart','gauge']
+      });
+
+      google.setOnLoadCallback(load);
+    </script>
+
+  </head>
+  <body style="text-align:left">
+    <h3 >Temperature in 300</h3>
+    <h4 ><div id="time"></div></h4>
+    <div id="gauge" style="width:600px;margin-left:10;margin-right:auto"></div>
+  </body>
+</html>
+

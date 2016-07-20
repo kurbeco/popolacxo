@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- EXTERNAL LIBS-->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script src="https://www.google.com/jsapi"></script>
+
+    <!-- EXAMPLE SCRIPT -->
+    <script>
+
+     function getUrlVars() {
+       var vars = {};
+       var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi,    
+       function(m,key,value) {
+         vars[key] = value;
+       });
+       return vars;
+     }
+
+      function getHumidex(temp, hum) {
+        var t_celcius= parseFloat(temp);
+	var humidity = parseFloat(hum);
+
+	var t_kelvin=t_celcius + 273;
+	var eTs=Math.pow(10,((-2937.4 /t_kelvin)-4.9283* Math.log(t_kelvin)/Math.LN10 +23.5471));
+	var eTd=eTs * humidity /100;
+
+        var humidex=t_celcius + ((eTd-10)*5/9);
+        var humidex=Math.round(humidex*100)/100;
+
+	if (humidex < t_celcius) {
+		humidex=t_celcius;
+	}
+        return humidex;
+      }
+
+      // onload callback
+      function drawChart() {
+        var public_key = 'ZGKzMD9lv8uo89J6YdDp';
+        var days = getUrlVars()["days"];
+        if (days == undefined) days = 1;
+        var hours = getUrlVars()["hours"];
+        if (hours == undefined) hours = days * 24
+        else {
+               if (hours == 0) hours = 1
+               else hours = Math.round(hours);
+        }
+        // JSONP request
+        var jsonData = $.ajax({
+          url: 'https://data.sparkfun.com/output/' + public_key + '?gt[timestamp]=now%20-' + hours + 'hours',
+          data: {page: 1},
+          dataType: 'jsonp',
+        }).done(function (results) {
+
+          var data = new google.visualization.DataTable();
+          data.addColumn('datetime', 'Time');
+          data.addColumn('number', 'Temperature \u00B0C');
+          data.addColumn('number', 'Relative Humidity %');
+          data.addColumn('number', 'Humidex \u00B0C');
+          var autoMin = 50;
+          var autoMax = 0;
+
+          var autoHumidMin = 100;
+          var autoHumidMax = 0;
+
+          $.each(results, function (i, row) {
+            var humidex = getHumidex(row.dht22temp, row.humidity);
+            data.addRow([
+              (new Date(row.timestamp)),
+              parseFloat(row.dht22temp),
+              parseFloat(row.humidity),
+              parseFloat(humidex)
+            ]);
+            // scale the axis but only if we have a value for each data point
+            if (row.tempa && row.tempb && row.tempc && row.dht22temp) {
+                var max = Math.max(row.tempa, row.tempb, row.tempc, row.dht22temp, humidex);
+                var min = Math.min(row.tempa, row.tempb, row.tempc, row.dht22temp);
+            }
+
+            if (max > autoMax) autoMax = max;
+            if (min < autoMin) autoMin = min;
+
+            if (row.humidity) {
+                if (row.humidity > autoHumidMax) autoHumidMax = row.humidity;
+                if (row.humidity < autoHumidMin) autoHumidMin = row.humidity;
+            }
+          });
+          
+          autoMin = Math.floor(autoMin - 0.0);
+          autoMax = Math.ceil(autoMax + 0.0);
+
+          autoHumidMin = Math.floor(autoHumidMin - 1.0);
+          autoHumidMax = Math.ceil(autoHumidMax + 1.0); 
+
+          var chart = new google.visualization.LineChart($('#chart').get(0));
+          var cmin = getUrlVars()["cmin"];
+          if (cmin == undefined) cmin = autoMin;
+          var cmax = getUrlVars()["cmax"];
+          if (cmax == undefined) cmax = autoMax;
+          var hmin = getUrlVars()["hmin"];
+          if (hmin == undefined) hmin = autoHumidMin;
+          var hmax = getUrlVars()["hmax"];
+          if (hmax == undefined) hmax = autoHumidMax;          
+          var height = getUrlVars()["height"];
+          if (height == undefined) height = 500;
+          var hoursText = 'hour.';
+          if (hours > 1) hoursText = hours + ' hours.';
+          chart.draw(data, {
+            title: 'Temperature data for 300 from the past ' + hoursText,
+            height: height,
+            vAxes: {
+                0: { 
+                  title: "% relative humidity", 
+                  viewWindowMode:'explicit',
+                  viewWindow:{
+                    max:hmax,
+                    min:hmin
+                  }
+                },
+                1: {
+                  title: "\u00B0C",
+                  viewWindowMode:'explicit',
+                  viewWindow:{
+                    max:cmax,
+                    min:cmin
+                  }
+                }
+            },
+            series: {
+                0:{targetAxisIndex:1},
+                1:{targetAxisIndex:0},
+                2:{targetAxisIndex:1}
+            }
+          });
+          document.getElementById("humidex").innerHTML = 'Current Humidex: ' + getHumidex(results[0].dht22temp, results[0].humidity)  + '\u00B0C';
+          document.getElementById("temperature").innerHTML = 'Current Temperature: ' + results[0].dht22temp  + '\u00B0C';
+          document.getElementById("humidity").innerHTML = 'Current Humidity: ' + results[0].humidity  + '%';
+        });
+
+      }
+
+      // load chart lib
+      google.load('visualization', '1', {
+        packages: ['corechart']
+      });
+
+      function load() {
+      drawChart();
+      setInterval(function() {
+                drawChart();
+          }, 450000);
+      }
+
+      // call drawChart once google charts is loaded
+      google.setOnLoadCallback(load);
+
+    </script>
+
+  </head>
+  <body>
+    <div id="chart" style="width: 100%;"></div>
+    <h4 ><div id="humidex"></div></h4>
+    <h4 ><div id="temperature"></div></h4>
+    <h4 ><div id="humidity"></div></h4>
+  </body>
+</html>
+
