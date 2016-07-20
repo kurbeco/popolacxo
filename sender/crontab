@@ -1,0 +1,3 @@
+*/5 8-18 * * * /home/pi/pi_temps/send_desk_temps.sh apikey
+*/15 18-23 * * * /home/pi/pi_temps/send_desk_temps.sh apikey
+*/15 0-8 * * * /home/pi/pi_temps/send_desk_temps.sh apikey

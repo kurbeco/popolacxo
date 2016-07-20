@@ -1,0 +1,22 @@
+This small collection of things is intended to run on Raspberry Pi.
+It will read temperature data from 3 DS18B20 probles conencted via
+the one-wire bus and temperature and humidity data from a DHT22
+connected to GPIO 7.
+
+Setup
+
+In /boot/config add
+
+  dtoverlay=w1-gpio
+
+In /etc/modules add
+
+  w1-gpio
+  w1-therm
+
+That is all that is needed for DS18B20 support.
+
+To add support for the DHT22 then some more setup is neeed.
+
+Clone and install 
+  https://github.com/adafruit/Adafruit_Python_DHT.git
