@@ -17,15 +17,28 @@
        return vars;
      }
 
+      function getDewpointTemp(air_temp, hum) {
+        // Calculate dewpoint temp using Arden Buck equation, constants
+        // from the Buck Research CR-1A manual
+        var b = 18.678; // dimensionless
+        var c = 257.14; // degrees c
+        var d = 234.5; //degrees C
+
+        air_temp = parseFloat(air_temp);
+        var gamma = Math.log((hum/100) * Math.exp((b-(air_temp/d)) * (air_temp/(c+air_temp))));
+        var t_dp = (c * gamma)/(b - gamma);
+        var t_dp=Math.round(t_dp*100)/100;
+        return t_dp
+      }
+
       function getHumidex(temp, hum) {
         var t_celcius= parseFloat(temp);
 	var humidity = parseFloat(hum);
+        var dew_point = parseFloat(getDewpointTemp(t_celcius, humidity));
+        var dew_point_kelvin = dew_point + 273;
+        var humidex_correction = 0.5555 * ((6.11 * Math.exp(5417.7530 * ((1/273.16)-(1/dew_point_kelvin)))) - 10);
 
-	var t_kelvin=t_celcius + 273;
-	var eTs=Math.pow(10,((-2937.4 /t_kelvin)-4.9283* Math.log(t_kelvin)/Math.LN10 +23.5471));
-	var eTd=eTs * humidity /100;
-
-        var humidex=t_celcius + ((eTd-10)*5/9);
+        var humidex=t_celcius + humidex_correction;
         var humidex=Math.round(humidex*100)/100;
 
 	if (humidex < t_celcius) {
@@ -135,6 +148,7 @@
           document.getElementById("humidex").innerHTML = 'Current Humidex: ' + getHumidex(results[0].dht22temp, results[0].humidity)  + '\u00B0C';
           document.getElementById("temperature").innerHTML = 'Current Temperature: ' + results[0].dht22temp  + '\u00B0C';
           document.getElementById("humidity").innerHTML = 'Current Humidity: ' + results[0].humidity  + '%';
+          document.getElementById("dewpoint").innerHTML = 'Current Dewpoint Temp: ' + getDewpointTemp(results[0].dht22temp, results[0].humidity)  + '\u00B0C';
         });
 
       }
@@ -162,6 +176,7 @@
     <h4 ><div id="humidex"></div></h4>
     <h4 ><div id="temperature"></div></h4>
     <h4 ><div id="humidity"></div></h4>
+    <h4 ><div id="dewpoint"></div></h4>
   </body>
 </html>
 
